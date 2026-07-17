@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import get_settings
 from app.db import init_db
-from app.routers import projects, structure
+from app.routers import export, projects, structure
 
 app = FastAPI(title="Slide Maker")
 settings = get_settings()
@@ -17,6 +17,7 @@ app.add_middleware(
 )
 app.include_router(projects.router, prefix="/api")
 app.include_router(structure.router, prefix="/api")
+app.include_router(export.router, prefix="/api")
 
 
 @app.on_event("startup")
