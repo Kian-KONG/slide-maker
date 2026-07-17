@@ -1,4 +1,7 @@
 def test_export_pptx(client):
+    import zipfile
+    from io import BytesIO
+
     pid = client.post("/api/projects", json={"title": "Export Me"}).json()["project"]["id"]
     client.put(
         f"/api/projects/{pid}/slides",
@@ -38,6 +41,17 @@ def test_export_pptx(client):
     assert "Export_Me.pptx" in r.headers.get("content-disposition", "") or "Export Me.pptx" in r.headers.get(
         "content-disposition", ""
     )
+
+    # bullets + two_column body paragraphs must carry real OOXML bullet markers
+    with zipfile.ZipFile(BytesIO(r.content)) as zf:
+        slide_xml = "\n".join(
+            zf.read(name).decode("utf-8")
+            for name in sorted(zf.namelist())
+            if name.startswith("ppt/slides/slide") and name.endswith(".xml")
+        )
+    assert "<a:buFont" in slide_xml
+    assert "<a:buChar" in slide_xml
+    assert slide_xml.count("<a:buChar") >= 4  # 2 bullets + 1 left + 1 right
 
 
 def test_export_missing_project(client):

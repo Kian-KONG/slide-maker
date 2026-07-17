@@ -1,9 +1,11 @@
 import re
 from io import BytesIO
 
+from lxml import etree
 from pptx import Presentation
 from pptx.dml.color import RGBColor
 from pptx.enum.text import PP_ALIGN
+from pptx.oxml.ns import qn
 from pptx.util import Inches, Pt
 
 from app.schemas import SlideOut
@@ -49,6 +51,18 @@ def _set_run(paragraph, text: str, size: Pt, bold: bool = False, color=TITLE_COL
     run.font.size = size
     run.font.bold = bold
     run.font.color.rgb = color
+
+
+def _apply_bullet(paragraph) -> None:
+    """Apply true OOXML bullet markers (a:buFont + a:buChar) to a paragraph."""
+    pPr = paragraph._p.get_or_add_pPr()
+    for tag in ("a:buFont", "a:buChar", "a:buNone", "a:buAutoNum", "a:buBlip"):
+        for el in pPr.findall(qn(tag)):
+            pPr.remove(el)
+    bu_font = etree.SubElement(pPr, qn("a:buFont"))
+    bu_font.set("typeface", "Arial")
+    bu_char = etree.SubElement(pPr, qn("a:buChar"))
+    bu_char.set("char", "•")
 
 
 def _add_textbox(slide, left, top, width, height):
@@ -97,6 +111,7 @@ def _render_bullets(slide, data: SlideOut) -> None:
         p.text = str(item)
         p.font.size = Pt(20)
         p.font.color.rgb = BODY_COLOR
+        _apply_bullet(p)
 
 
 def _render_two_column(slide, data: SlideOut) -> None:
@@ -129,3 +144,4 @@ def _column(slide, left, heading: str, items: list) -> None:
         p.text = str(item)
         p.font.size = Pt(18)
         p.font.color.rgb = BODY_COLOR
+        _apply_bullet(p)
