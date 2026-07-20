@@ -22,8 +22,8 @@ export default function NewPage() {
         raw_notes: rawNotes,
       };
       if (title.trim()) body.title = title.trim();
-      const detail = await api.structure(body);
-      navigate(`/projects/${detail.project.id}`);
+      const result = await api.expand(body);
+      navigate(`/projects/${result.project.id}/expand`);
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     } finally {
@@ -40,6 +40,10 @@ export default function NewPage() {
         </Link>
       </header>
 
+      <p className="muted step-hint">
+        Step 1 · Paste raw notes. Next you will review an expanded narrative and outline before slides are generated.
+      </p>
+
       <form className="form" onSubmit={(e) => void handleSubmit(e)}>
         <label className="field">
           <span>Title (optional)</span>
@@ -53,11 +57,11 @@ export default function NewPage() {
         </label>
 
         <label className="field">
-          <span>Notes</span>
+          <span>Raw notes</span>
           <textarea
             value={rawNotes}
             onChange={(e) => setRawNotes(e.target.value)}
-            placeholder="Paste your raw notes here…"
+            placeholder="Paste source notes here (kept verbatim)…"
             rows={12}
             required
             disabled={loading}
@@ -67,7 +71,7 @@ export default function NewPage() {
         {error && <p className="error">{error}</p>}
 
         <button type="submit" className="btn primary" disabled={loading}>
-          {loading ? "Structuring…" : "Create structure"}
+          {loading ? "Expanding…" : "Expand & continue"}
         </button>
       </form>
     </div>

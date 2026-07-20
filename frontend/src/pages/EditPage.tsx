@@ -1,6 +1,11 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { api, emptyBody, LAYOUTS, toSlideIn } from "../api/client";
+import {
+  buildRevealDocument,
+  downloadHtml,
+  sanitizeFilename,
+} from "../lib/revealExport";
 import type { Layout, ProjectDetail, SlideOut } from "../types";
 
 function newSlide(position: number): SlideOut {
@@ -110,7 +115,9 @@ export default function EditPage() {
   async function handleExport() {
     setError(null);
     try {
-      await api.exportProject(id);
+      const html = buildRevealDocument(title.trim() || detail?.project.title || "Untitled", slides);
+      downloadHtml(sanitizeFilename(title.trim() || "presentation"), html);
+      await api.exportHtml(id, html);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     }
@@ -150,6 +157,9 @@ export default function EditPage() {
           />
         </div>
         <div className="header-actions">
+          <Link className="btn" to={`/projects/${id}/expand`}>
+            Expand
+          </Link>
           <Link className="btn" to={`/projects/${id}/preview`}>
             Preview
           </Link>

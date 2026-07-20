@@ -35,6 +35,18 @@ export default function ListPage() {
     }
   }
 
+  function projectHref(p: ProjectListItem) {
+    if (p.has_slides) return `/projects/${p.id}`;
+    if (p.has_expanded) return `/projects/${p.id}/expand`;
+    return `/projects/${p.id}/expand`;
+  }
+
+  function statusLabel(p: ProjectListItem) {
+    if (p.has_slides) return "Slides ready";
+    if (p.has_expanded) return "Expanded · needs slides";
+    return "Draft";
+  }
+
   return (
     <div className="page">
       <header className="page-header">
@@ -55,10 +67,10 @@ export default function ListPage() {
         <ul className="project-list">
           {projects.map((p) => (
             <li key={p.id} className="project-row">
-              <Link className="project-link" to={`/projects/${p.id}`}>
+              <Link className="project-link" to={projectHref(p)}>
                 <span className="project-title">{p.title}</span>
                 <span className="muted">
-                  Updated {new Date(p.updated_at).toLocaleString()}
+                  {statusLabel(p)} · Updated {new Date(p.updated_at).toLocaleString()}
                 </span>
               </Link>
               <button

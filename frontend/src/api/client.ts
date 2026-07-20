@@ -1,4 +1,12 @@
-import type { Layout, ProjectDetail, ProjectListItem, SlideIn, SlideOut } from "../types";
+import type {
+  ExpandResult,
+  Layout,
+  OutlineItem,
+  ProjectDetail,
+  ProjectListItem,
+  SlideIn,
+  SlideOut,
+} from "../types";
 
 async function errorDetail(res: Response): Promise<string> {
   let detail = res.statusText;
@@ -21,20 +29,6 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   }
   if (res.status === 204) return undefined as T;
   return res.json();
-}
-
-function parseFilename(disposition: string | null): string {
-  if (!disposition) return "presentation.html";
-  const star = /filename\*=UTF-8''([^;]+)/i.exec(disposition);
-  if (star) {
-    try {
-      return decodeURIComponent(star[1]);
-    } catch {
-      /* fall through */
-    }
-  }
-  const plain = /filename="([^"]+)"/i.exec(disposition);
-  return plain?.[1] || "presentation.html";
 }
 
 export const LAYOUTS: Layout[] = ["title", "section", "bullets", "two_column"];
@@ -62,11 +56,23 @@ export const api = {
   getProject: (id: string) => request<ProjectDetail>(`/api/projects/${id}`),
   deleteProject: (id: string) =>
     request<void>(`/api/projects/${id}`, { method: "DELETE" }),
-  structure: (body: { title?: string; raw_notes: string }) =>
-    request<ProjectDetail>("/api/structure", {
+  expand: (body: { title?: string; raw_notes: string }) =>
+    request<ExpandResult>("/api/expand", {
       method: "POST",
       body: JSON.stringify(body),
     }),
+  reExpand: (id: string) =>
+    request<ExpandResult>(`/api/projects/${id}/re-expand`, { method: "POST" }),
+  saveExpanded: (
+    id: string,
+    body: { expanded_notes?: string; outline?: OutlineItem[]; title?: string },
+  ) =>
+    request<ExpandResult>(`/api/projects/${id}/expanded`, {
+      method: "PATCH",
+      body: JSON.stringify(body),
+    }),
+  generate: (id: string) =>
+    request<ProjectDetail>(`/api/projects/${id}/generate`, { method: "POST" }),
   putSlides: (id: string, slides: SlideIn[]) =>
     request<ProjectDetail>(`/api/projects/${id}/slides`, {
       method: "PUT",
@@ -77,20 +83,12 @@ export const api = {
       method: "PATCH",
       body: JSON.stringify({ title }),
     }),
-  exportProject: async (id: string) => {
-    const res = await fetch(`/api/projects/${id}/export`, { method: "POST" });
-    if (!res.ok) {
-      throw new Error(await errorDetail(res));
-    }
-    const blob = await res.blob();
-    const filename = parseFilename(res.headers.get("Content-Disposition"));
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
-  },
+  exportHtml: (id: string, html: string) =>
+    request<{ ok: boolean; path: string; slug: string }>(
+      `/api/projects/${id}/export-html`,
+      {
+        method: "POST",
+        body: JSON.stringify({ html }),
+      },
+    ),
 };
