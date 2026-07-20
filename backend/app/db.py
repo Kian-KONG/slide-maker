@@ -1,5 +1,7 @@
 import sqlite3
+from contextlib import contextmanager
 from pathlib import Path
+from typing import Iterator
 
 from app.config import get_settings
 
@@ -33,10 +35,16 @@ def get_connection() -> sqlite3.Connection:
     return conn
 
 
-def init_db() -> None:
+@contextmanager
+def connection() -> Iterator[sqlite3.Connection]:
     conn = get_connection()
     try:
-        conn.executescript(SCHEMA)
-        conn.commit()
+        yield conn
     finally:
         conn.close()
+
+
+def init_db() -> None:
+    with connection() as conn:
+        conn.executescript(SCHEMA)
+        conn.commit()

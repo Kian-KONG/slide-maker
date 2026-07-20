@@ -44,3 +44,21 @@ def test_delete_project(client):
     pid = client.post("/api/projects", json={"title": "X"}).json()["project"]["id"]
     assert client.delete(f"/api/projects/{pid}").status_code == 204
     assert client.get(f"/api/projects/{pid}").status_code == 404
+
+
+def test_put_slides_renumbers_duplicate_positions(client):
+    pid = client.post("/api/projects", json={"title": "Dup"}).json()["project"]["id"]
+    r = client.put(
+        f"/api/projects/{pid}/slides",
+        json={
+            "slides": [
+                {"id": "renum-a", "position": 5, "layout": "title", "title": "A", "body": {}},
+                {"id": "renum-b", "position": 5, "layout": "bullets", "title": "B", "body": {"bullets": ["x"]}},
+                {"id": "renum-c", "position": 0, "layout": "section", "title": "C", "body": {}},
+            ]
+        },
+    )
+    assert r.status_code == 200
+    positions = [s["position"] for s in r.json()["slides"]]
+    assert positions == [0, 1, 2]
+    assert [s["title"] for s in r.json()["slides"]] == ["A", "B", "C"]

@@ -1,7 +1,4 @@
-def test_export_pptx(client):
-    import zipfile
-    from io import BytesIO
-
+def test_export_html(client):
     pid = client.post("/api/projects", json={"title": "Export Me"}).json()["project"]["id"]
     client.put(
         f"/api/projects/{pid}/slides",
@@ -32,28 +29,41 @@ def test_export_pptx(client):
     )
     r = client.post(f"/api/projects/{pid}/export")
     assert r.status_code == 200
-    assert (
-        r.headers["content-type"]
-        == "application/vnd.openxmlformats-officedocument.presentationml.presentation"
-    )
-    assert r.content[:2] == b"PK"  # zip/pptx
+    assert "text/html" in r.headers["content-type"]
+    html = r.content.decode("utf-8")
+    assert "<!DOCTYPE html>" in html
+    assert "Export Me" in html
+    assert "one" in html and "two" in html
+    assert "l1" in html and "r1" in html
     assert "attachment" in r.headers.get("content-disposition", "")
-    assert "Export_Me.pptx" in r.headers.get("content-disposition", "") or "Export Me.pptx" in r.headers.get(
-        "content-disposition", ""
-    )
-
-    # bullets + two_column body paragraphs must carry real OOXML bullet markers
-    with zipfile.ZipFile(BytesIO(r.content)) as zf:
-        slide_xml = "\n".join(
-            zf.read(name).decode("utf-8")
-            for name in sorted(zf.namelist())
-            if name.startswith("ppt/slides/slide") and name.endswith(".xml")
-        )
-    assert "<a:buFont" in slide_xml
-    assert "<a:buChar" in slide_xml
-    assert slide_xml.count("<a:buChar") >= 4  # 2 bullets + 1 left + 1 right
+    assert ".html" in r.headers.get("content-disposition", "")
 
 
 def test_export_missing_project(client):
     r = client.post("/api/projects/nonexistent-id/export")
     assert r.status_code == 404
+
+
+def test_export_utf8_filename(client):
+    pid = client.post("/api/projects", json={"title": "前沿生态"}).json()["project"]["id"]
+    client.put(
+        f"/api/projects/{pid}/slides",
+        json={
+            "slides": [
+                {
+                    "id": "utf8-a",
+                    "position": 0,
+                    "layout": "title",
+                    "title": "T",
+                    "body": {"subtitle": ""},
+                },
+            ]
+        },
+    )
+    r = client.post(f"/api/projects/{pid}/export")
+    assert r.status_code == 200
+    cd = r.headers.get("content-disposition", "")
+    assert "filename*=" in cd
+    assert "UTF-8''" in cd
+    assert "%E5%89%8D%E6%B2%BF%E7%94%9F%E6%80%81" in cd
+    assert r.content.decode("utf-8").startswith("<!DOCTYPE html>")

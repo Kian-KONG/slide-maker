@@ -12,7 +12,7 @@
 1. 用户粘贴会议笔记  
 2. 服务端调用 LLM，生成结构化幻灯片大纲  
 3. 用户在浏览器中精修（增删页、改标题/要点、调序）  
-4. 预览 → 导出 `.pptx`  
+4. 预览 → 导出独立 `.html` 幻灯片（浏览器翻页 / 可打印 PDF）  
 5. 项目持久化到 SQLite，可再次打开编辑
 
 ## 2. 非目标（第一版不做）
@@ -31,7 +31,7 @@
 | 前端 | Vite + React + React Router | SPA，不做 Next.js |
 | 后端 | FastAPI (Python) | LLM、SQLite、导出 |
 | 数据库 | SQLite | 轻量，文件位于 `backend/data/slide_maker.db` |
-| PPT 导出 | python-pptx | 服务端生成 `.pptx` |
+| HTML 导出 | 服务端生成自包含 `.html` | 键盘翻页；打印即 PDF |
 | LLM | OpenAI 兼容 HTTP API | Key / Base URL / Model 放 `.env` |
 
 ## 4. 架构
@@ -48,7 +48,7 @@ Browser (React Router SPA)
 FastAPI
   ├── structure  → LLM → slides 落库
   ├── projects CRUD + slides 更新
-  └── export     → python-pptx → 文件下载
+  └── export     → HTML deck → 文件下载
          │
          ▼
 SQLite (projects, slides)
@@ -123,7 +123,7 @@ LLM 只能输出上述 layout；未知 layout 在入库前归一为 `bullets`。
 | DELETE | `/api/projects/{id}` | 删除项目及 slides |
 | POST | `/api/structure` | 见下（独立路径，避免与 `{id}` 冲突） |
 | PUT | `/api/projects/{id}/slides` | 整表替换 slides |
-| POST | `/api/projects/{id}/export` | 返回 `application/vnd.openxmlformats-officedocument.presentationml.presentation` |
+| POST | `/api/projects/{id}/export` | 返回 `text/html` 自包含幻灯片 |
 
 ### 7.1 `POST /api/structure`
 
@@ -163,12 +163,13 @@ CORS_ORIGINS=http://localhost:5173
 - 保留原意中的关键术语、人名、产品名；不编造笔记中没有的事实  
 - 输出必须是可解析 JSON，无 markdown 围栏
 
-## 8. 导出（python-pptx）
+## 8. 导出（HTML）
 
-- 按 `position` 顺序渲染  
-- 统一简洁模板：白底、深色标题、要点列表；`two_column` 左右分栏  
-- 文件名：`{title}.pptx`（非法字符替换）  
-- 不嵌入外部字体依赖以外的资源；第一版不做动画
+- 按 `position` 顺序渲染为自包含 `.html`  
+- 统一简洁模板：纸色底、深色标题、要点列表；`two_column` 左右分栏；section 深色分隔  
+- 键盘 ←/→ 翻页；`P` 打开打印（可另存 PDF）  
+- 文件名：`{title}.html`（非法字符替换；`Content-Disposition` 支持 UTF-8）  
+- 不依赖 PowerPoint / Keynote
 
 ## 9. 目录结构
 
@@ -177,7 +178,6 @@ slide-maker/
 ├── frontend/
 │   ├── src/
 │   │   ├── pages/           # ListPage, NewPage, EditPage, PreviewPage
-│   │   ├── components/      # SlideList, SlideForm, SlideCanvas, ...
 │   │   ├── api/             # fetch 封装
 │   │   ├── types.ts
 │   │   ├── App.tsx          # React Router
@@ -188,7 +188,6 @@ slide-maker/
 │   ├── app/
 │   │   ├── main.py
 │   │   ├── db.py
-│   │   ├── models.py
 │   │   ├── schemas.py
 │   │   ├── routers/
 │   │   │   ├── projects.py
@@ -196,33 +195,33 @@ slide-maker/
 │   │   │   └── export.py
 │   │   └── services/
 │   │       ├── llm.py
-│   │       └── pptx_export.py
+│   │       └── html_export.py
 │   ├── data/                # gitignore：*.db
 │   ├── requirements.txt
 │   └── .env.example
+├── content/
+│   ├── notes/
+│   └── decks/               # standalone .html
 ├── docs/
-│   ├── design.md
-│   ├── implementation-plan.md
-│   └── sdd/                 # task briefs / reports / progress
 ├── README.md
 └── .gitignore
 ```
 
 本地开发：
 
-- 前端：`cd frontend && npm run dev`（5173，代理 `/api`）  
-- 后端：`cd backend && uvicorn app.main:app --reload --port 8000`
+- `make install` 然后 `make start`  
+- 或：前端 `npm run dev`（5173）+ 后端 `uvicorn app.main:app --reload --port 8000`
 
 ## 10. 示例输入（验收用）
 
-用户提供的会议摘要（教育 / 物理智能 / 青年与 AI / 光电与算力 / 欧莱雅 / 王坚与科学数据 / 医学智能 / 世界模型与具身 / 普惠安全等板块）作为第一版结构化质量的手工验收样例：粘贴全文 → 检查是否按主题分节、要点是否可读、导出 PPT 页序是否合理。
+用户提供的会议摘要（教育 / 物理智能 / 青年与 AI / 光电与算力 / 欧莱雅 / 王坚与科学数据 / 医学智能 / 世界模型与具身 / 普惠安全等板块）作为第一版结构化质量的手工验收样例：粘贴全文 → 检查是否按主题分节、要点是否可读、导出 HTML 页序是否合理。
 
 ## 11. 成功标准（第一版）
 
 1. 配置 `.env` 后，粘贴样例笔记可生成可编辑项目  
 2. 编辑后刷新仍在（SQLite）  
 3. 预览页内容与编辑一致  
-4. 导出的 `.pptx` 可在 PowerPoint / Keynote 打开  
+4. 导出的 `.html` 可在浏览器打开翻页，并可打印为 PDF  
 5. 无 API Key 时结构化接口返回明确错误，不泄露堆栈给前端
 
 ## 12. 后续可选（不做进第一版）

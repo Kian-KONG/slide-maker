@@ -122,8 +122,15 @@ def structure_notes(raw_notes: str, title: str | None = None) -> StructureLLMRes
 
     try:
         content = data["choices"][0]["message"]["content"]
+    except (KeyError, IndexError, TypeError) as exc:
+        raise HTTPException(status_code=502, detail="LLM returned empty response") from exc
+
+    if not isinstance(content, str) or not content.strip():
+        raise HTTPException(status_code=502, detail="LLM returned empty response")
+
+    try:
         parsed = json.loads(_strip_fences(content))
-    except (KeyError, IndexError, TypeError, json.JSONDecodeError) as exc:
+    except json.JSONDecodeError as exc:
         raise HTTPException(status_code=502, detail="LLM returned invalid JSON") from exc
 
     if not isinstance(parsed, dict):
