@@ -200,8 +200,10 @@ slide-maker/
 │   ├── data/                # gitignore：*.db
 │   ├── requirements.txt
 │   └── .env.example
-├── docs/superpowers/specs/
-│   └── 2026-07-17-slide-maker-design.md
+├── docs/
+│   ├── design.md
+│   ├── implementation-plan.md
+│   └── sdd/                 # task briefs / reports / progress
 ├── README.md
 └── .gitignore
 ```

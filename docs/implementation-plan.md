@@ -8,7 +8,7 @@
 
 **Tech Stack:** Python 3.11+, FastAPI, uvicorn, httpx, python-pptx, pydantic-settings; Vite, React 18, React Router 6, TypeScript.
 
-**Spec:** `docs/superpowers/specs/2026-07-17-slide-maker-design.md`
+**Spec:** `docs/design.md`
 
 ## Global Constraints
 
