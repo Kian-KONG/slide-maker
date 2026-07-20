@@ -178,7 +178,7 @@ describe("API", () => {
     assert.equal(res.statusCode, 200);
     const out = res.json() as { ok: boolean; path: string; slug: string };
     assert.equal(out.ok, true);
-    assert.equal(out.slug, "Frontier");
+    assert.equal(out.slug, `Frontier-${pid.slice(0, 8)}`);
     assert.ok(fs.existsSync(out.path));
     assert.equal(fs.readFileSync(out.path, "utf8"), html);
     const folder = path.dirname(out.path);

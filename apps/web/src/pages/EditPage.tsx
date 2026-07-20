@@ -93,18 +93,23 @@ export default function EditPage() {
     setSelected(nextSelected);
   }
 
+  async function persistEdits(): Promise<ProjectDetail> {
+    if (detail && title.trim() && title.trim() !== detail.project.title) {
+      await api.patchProject(id, title.trim());
+    }
+    const d = await api.putSlides(id, toSlideIn(slides));
+    setDetail(d);
+    setTitle(d.project.title);
+    setSlides(d.slides);
+    setSelected((i) => Math.min(i, Math.max(0, d.slides.length - 1)));
+    return d;
+  }
+
   async function handleSave() {
     setSaving(true);
     setError(null);
     try {
-      if (detail && title.trim() && title.trim() !== detail.project.title) {
-        await api.patchProject(id, title.trim());
-      }
-      const d = await api.putSlides(id, toSlideIn(slides));
-      setDetail(d);
-      setTitle(d.project.title);
-      setSlides(d.slides);
-      setSelected((i) => Math.min(i, Math.max(0, d.slides.length - 1)));
+      await persistEdits();
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
@@ -115,8 +120,9 @@ export default function EditPage() {
   async function handleExport() {
     setError(null);
     try {
-      const html = buildRevealDocument(title.trim() || detail?.project.title || "Untitled", slides);
-      downloadHtml(sanitizeFilename(title.trim() || "presentation"), html);
+      const d = await persistEdits();
+      const html = buildRevealDocument(d.project.title, d.slides);
+      downloadHtml(sanitizeFilename(d.project.title), html);
       await api.exportHtml(id, html);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));

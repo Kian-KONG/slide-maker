@@ -28,33 +28,35 @@
 
 | 层 | 选型 | 说明 |
 |----|------|------|
-| 前端 | Vite + React + React Router | SPA，不做 Next.js |
-| 后端 | FastAPI (Python) | LLM、SQLite、导出 |
-| 数据库 | SQLite | 轻量，文件位于 `backend/data/slide_maker.db` |
-| HTML 导出 | 服务端生成自包含 `.html` | 键盘翻页；打印即 PDF |
-| LLM | OpenAI 兼容 HTTP API | Key / Base URL / Model 放 `.env` |
+| 前端 | Vite + React + React Router + Reveal.js | SPA，`apps/web` |
+| 后端 | Fastify + TypeScript | LLM、SQLite、deck 落盘，`apps/api` |
+| 数据库 | SQLite | 轻量，文件位于 `apps/api/data/slide_maker.db` |
+| HTML 导出 | 前端生成自包含 Reveal `.html` | 键盘翻页；打印即 PDF |
+| LLM | OpenAI 兼容 HTTP API | Key / Base URL / Model 放 `apps/api/.env` |
+| Monorepo | npm workspaces | 根 `package.json` → `apps/*` |
 
 ## 4. 架构
 
 ```
 Browser (React Router SPA)
   ├── /                 项目列表
-  ├── /new              粘贴笔记 → 触发结构化
-  ├── /projects/:id     编辑大纲
-  └── /projects/:id/preview  预览
+  ├── /new              粘贴笔记 → expand
+  ├── /projects/:id/expand  扩写稿 + 大纲
+  ├── /projects/:id     编辑幻灯片
+  └── /projects/:id/preview  Reveal 预览
          │
-         │  REST JSON
+         │  REST JSON (/api proxy)
          ▼
-FastAPI
-  ├── structure  → LLM → slides 落库
+Fastify (apps/api)
+  ├── expand / generate → LLM → SQLite
   ├── projects CRUD + slides 更新
-  └── export     → HTML deck → 文件下载
+  └── export-html → content/decks/<slug>/
          │
          ▼
 SQLite (projects, slides)
 ```
 
-API Key **仅存在于后端 `.env`**，不暴露给前端。
+API Key **仅存在于 `apps/api/.env`**，不暴露给前端。
 
 ## 5. 页面与交互
 
@@ -175,42 +177,34 @@ CORS_ORIGINS=http://localhost:5173
 
 ```
 slide-maker/
-├── frontend/
-│   ├── src/
-│   │   ├── pages/           # ListPage, NewPage, EditPage, PreviewPage
-│   │   ├── api/             # fetch 封装
-│   │   ├── types.ts
-│   │   ├── App.tsx          # React Router
-│   │   └── main.tsx
-│   ├── package.json
-│   └── vite.config.ts       # /api 代理到后端
-├── backend/
-│   ├── app/
-│   │   ├── main.py
-│   │   ├── db.py
-│   │   ├── schemas.py
-│   │   ├── routers/
-│   │   │   ├── projects.py
-│   │   │   ├── structure.py
-│   │   │   └── export.py
-│   │   └── services/
-│   │       ├── llm.py
-│   │       └── html_export.py
-│   ├── data/                # gitignore：*.db
-│   ├── requirements.txt
-│   └── .env.example
+├── apps/
+│   ├── web/                 # Vite + React + Reveal
+│   │   ├── src/
+│   │   │   ├── pages/       # List, New, Expand, Edit, Preview
+│   │   │   ├── api/         # fetch 封装
+│   │   │   ├── lib/         # revealExport
+│   │   │   ├── types.ts
+│   │   │   └── App.tsx
+│   │   └── vite.config.ts   # /api 代理到 :8000
+│   └── api/                 # Fastify + SQLite + LLM
+│       ├── src/
+│       ├── tests/
+│       ├── data/            # gitignore：*.db
+│       └── .env.example
 ├── content/
 │   ├── notes/
-│   └── decks/               # standalone .html
+│   └── decks/               # Reveal slides.html + notes/expanded/meta
+├── package.json             # npm workspaces
 ├── docs/
+├── Makefile
 ├── README.md
 └── .gitignore
 ```
 
 本地开发：
 
-- `make install` 然后 `make start`  
-- 或：前端 `npm run dev`（5173）+ 后端 `uvicorn app.main:app --reload --port 8000`
+- `make install` 然后 `make start`
+- 或：根目录 `npm run dev:web`（5173）+ `npm run dev:api`（8000）
 
 ## 10. 示例输入（验收用）
 

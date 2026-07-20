@@ -9,7 +9,7 @@ import {
   type Layout,
   type SlideIn,
 } from "../repo.js";
-import { saveDeckHtml, saveProjectTexts, slugify } from "../services/deckStore.js";
+import { deckSlug, saveDeckHtml, saveProjectTexts } from "../services/deckStore.js";
 import { expandNotes, slidesFromExpanded } from "../services/llm.js";
 
 const outlineItem = z.object({
@@ -292,7 +292,7 @@ export async function registerRoutes(app: FastifyInstance): Promise<void> {
       return {
         ok: true,
         path: saved,
-        slug: slugify(detail.project.title),
+        slug: deckSlug(detail.project.title, detail.project.id),
       };
     } catch (err) {
       return sendError(reply, err);

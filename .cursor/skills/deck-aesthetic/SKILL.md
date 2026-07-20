@@ -45,5 +45,5 @@ Avoid: purple-on-white, indigo glow, emoji, multi-layer shadows, pill clusters.
 
 ## Repo hooks
 
-- Theme CSS: `frontend/src/lib/revealExport.ts`
-- Preview: `frontend/src/pages/PreviewPage.tsx`
+- Theme CSS: `apps/web/src/lib/revealExport.ts`
+- Preview: `apps/web/src/pages/PreviewPage.tsx`

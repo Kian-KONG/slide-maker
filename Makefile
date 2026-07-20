@@ -3,14 +3,13 @@
 #   make install   # one-shot deps
 #   make start     # one-shot run (API + UI)
 
-ROOT        := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
-SERVER      := $(ROOT)/server
-FRONTEND    := $(ROOT)/frontend
+ROOT := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
+API  := $(ROOT)/apps/api
+WEB  := $(ROOT)/apps/web
 
 .DEFAULT_GOAL := help
 
-.PHONY: help install install-server install-frontend \
-	start stop server frontend test lint build typecheck clean clean-frontend
+.PHONY: help install start stop api web server frontend test lint build typecheck clean
 
 help: ## Show this help
 	@awk 'BEGIN {FS = ":.*##"; printf "\nTargets:\n"} \
@@ -19,42 +18,37 @@ help: ## Show this help
 	@echo "Quick path:  make install && make start"
 	@echo "App: http://localhost:5173   API: http://localhost:8000/api/health"
 
-install: install-server install-frontend ## Install all dependencies (server + frontend)
+install: ## Install workspace deps (apps/api + apps/web)
+	cd $(ROOT) && npm install
+	@test -f $(API)/.env || cp $(API)/.env.example $(API)/.env
+	@echo "Ready. Edit apps/api/.env if needed (LLM_API_KEY)."
 
-install-server: ## npm install API server
-	cd $(SERVER) && npm install
-	@test -f $(SERVER)/.env || cp $(SERVER)/.env.example $(SERVER)/.env
-	@echo "Server ready. Edit server/.env if needed (LLM_API_KEY)."
-
-install-frontend: ## npm install frontend
-	cd $(FRONTEND) && npm install
-
-start: ## Start server + frontend together
+start: ## Start API + web together
 	@echo "Starting API :8000 and UI :5173 …"
 	@echo "Open http://localhost:5173  (Ctrl-C stops both)"
-	@$(MAKE) -j2 server frontend
+	@$(MAKE) -j2 api web
 
-server: ## Run Fastify API with reload on :8000
-	cd $(SERVER) && npm run dev
+api: ## Run Fastify API with reload on :8000
+	cd $(ROOT) && npm run dev:api
 
-frontend: ## Run Vite dev server on :5173
-	cd $(FRONTEND) && npm run dev
+web: ## Run Vite dev server on :5173
+	cd $(ROOT) && npm run dev:web
 
-test: ## Run server tests
-	cd $(SERVER) && npm test
+server: api ## Alias for api
+frontend: web ## Alias for web
 
-typecheck: ## Typecheck server + frontend
-	cd $(SERVER) && npm run typecheck
-	cd $(FRONTEND) && npx tsc -b --noEmit
+test: ## Run API tests
+	cd $(ROOT) && npm test
 
-lint: ## Lint frontend (oxlint)
-	cd $(FRONTEND) && npm run lint
+typecheck: ## Typecheck api + web
+	cd $(ROOT) && npm run typecheck
 
-build: ## Build frontend for production
-	cd $(FRONTEND) && npm run build
+lint: ## Lint web (oxlint)
+	cd $(ROOT) && npm run lint
 
-clean: clean-frontend ## Remove frontend build artifacts
+build: ## Build web for production
+	cd $(ROOT) && npm run build
+
+clean: ## Remove web build artifacts
+	rm -rf $(WEB)/dist
 	@echo "Done."
-
-clean-frontend: ## Remove frontend/dist
-	rm -rf $(FRONTEND)/dist

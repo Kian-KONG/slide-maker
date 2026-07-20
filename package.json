@@ -1,0 +1,17 @@
+{
+  "name": "slide-maker",
+  "private": true,
+  "version": "0.1.0",
+  "workspaces": [
+    "apps/*"
+  ],
+  "scripts": {
+    "dev:api": "npm run dev -w @slide-maker/api",
+    "dev:web": "npm run dev -w @slide-maker/web",
+    "start:api": "npm run start -w @slide-maker/api",
+    "test": "npm run test -w @slide-maker/api",
+    "typecheck": "npm run typecheck -w @slide-maker/api && npm run typecheck -w @slide-maker/web",
+    "lint": "npm run lint -w @slide-maker/web",
+    "build": "npm run build -w @slide-maker/web"
+  }
+}

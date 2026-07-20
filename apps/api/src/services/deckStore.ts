@@ -16,14 +16,18 @@ export function decksRoot(): string {
   return config.contentDecksPath;
 }
 
-export function deckFolder(title: string): string {
-  const folder = path.join(decksRoot(), slugify(title));
+export function deckSlug(title: string, projectId: string): string {
+  return `${slugify(title)}-${projectId.slice(0, 8)}`;
+}
+
+export function deckFolder(title: string, projectId: string): string {
+  const folder = path.join(decksRoot(), deckSlug(title, projectId));
   fs.mkdirSync(folder, { recursive: true });
   return folder;
 }
 
 export function saveProjectTexts(detail: ProjectDetail): string {
-  const folder = deckFolder(detail.project.title);
+  const folder = deckFolder(detail.project.title, detail.project.id);
   const notes = (detail.project.raw_notes || "").trim();
   if (notes) fs.writeFileSync(path.join(folder, "notes.md"), notes + "\n", "utf8");
   const expanded = (detail.project.expanded_notes || "").trim();
@@ -33,7 +37,7 @@ export function saveProjectTexts(detail: ProjectDetail): string {
   const meta = {
     title: detail.project.title,
     project_id: detail.project.id,
-    slug: slugify(detail.project.title),
+    slug: deckSlug(detail.project.title, detail.project.id),
     slide_count: detail.slides.length,
     has_expanded: Boolean(expanded),
     pipeline: "expand-v1-node",

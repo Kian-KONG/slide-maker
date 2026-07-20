@@ -1,7 +1,6 @@
 import type { SlideOut } from "../types";
-
-const REVEAL_VERSION = "5.2.1";
-const CDN = `https://cdn.jsdelivr.net/npm/reveal.js@${REVEAL_VERSION}`;
+import revealCss from "reveal.js/dist/reveal.css?raw";
+import revealJs from "reveal.js/dist/reveal.js?raw";
 
 function esc(text: unknown): string {
   return String(text ?? "")
@@ -145,7 +144,7 @@ export function buildRevealDocument(title: string, slides: SlideOut[]): string {
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
 <title>${deckTitle}</title>
-<link rel="stylesheet" href="${CDN}/dist/reveal.css"/>
+<style>${revealCss}</style>
 <style>${revealThemeCss}</style>
 </head>
 <body>
@@ -154,7 +153,7 @@ export function buildRevealDocument(title: string, slides: SlideOut[]): string {
 ${sections}
   </div>
 </div>
-<script src="${CDN}/dist/reveal.js"></script>
+<script>${revealJs.replace(/<\/script/gi, "<\\/script")}</script>
 <script>
 Reveal.initialize({
   hash: true,

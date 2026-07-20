@@ -7,21 +7,21 @@ AI-assisted slide deck builder: paste meeting notes → LLM expands & outlines �
 ## Quick start
 
 ```bash
-make install   # install server + frontend deps
+make install   # install workspace deps (apps/api + apps/web)
 make start     # run API (:8000) + UI (:5173) together
 ```
 
 Open http://localhost:5173 · Health: http://localhost:8000/api/health
 
 ```bash
-make test       # server tests (node:test)
-make lint       # frontend oxlint
-make build      # frontend production build
+make test       # API tests (node:test)
+make lint       # web oxlint
+make build      # web production build
 make typecheck  # TypeScript checks
 make help       # all targets
 ```
 
-Set `LLM_API_KEY` in `server/.env` (copied from `.env.example` on install).
+Set `LLM_API_KEY` in `apps/api/.env` (copied from `.env.example` on install).
 
 Defaults are DeepSeek (`https://api.deepseek.com/v1` · set `LLM_MODEL` in `.env`). Key: https://platform.deepseek.com/api_keys
 
@@ -35,15 +35,13 @@ Flow in UI: **New → Expand (edit narrative + outline) → Generate slides → 
 
 ```
 slide-maker/
-├── server/                  # Fastify API, SQLite, LLM, deck store
-│   ├── src/
-│   ├── tests/
-│   └── .env.example
-├── frontend/                # React SPA + Reveal.js preview/export
-│   └── src/pages/           # List, New, Expand, Edit, Preview
+├── apps/
+│   ├── api/                 # Fastify API, SQLite, LLM, deck store
+│   └── web/                 # React SPA + Reveal.js preview/export
 ├── content/
 │   ├── notes/               # structured meeting notes
 │   └── decks/               # standalone Reveal HTML decks
+├── package.json             # npm workspaces root
 └── docs/
 ```
 
@@ -58,4 +56,4 @@ slide-maker/
 ## Status
 
 API: health, projects/slides CRUD, expand → generate, Reveal HTML export to disk.  
-Frontend: list, new-from-notes, expand, edit, Reveal preview, export HTML.
+Web: list, new-from-notes, expand, edit, Reveal preview, export HTML.

@@ -61,22 +61,34 @@ async function chat(
   if (!config.llmApiKey) {
     throw httpError(503, "LLM_API_KEY is not configured");
   }
-  const res = await fetch(`${config.llmBaseUrl}/chat/completions`, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${config.llmApiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model: config.llmModel,
-      messages,
-      temperature,
-    }),
-  });
-  if (!res.ok) {
-    throw httpError(502, `LLM request failed with status ${res.status}`);
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), config.llmTimeoutMs);
+  try {
+    const res = await fetch(`${config.llmBaseUrl}/chat/completions`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${config.llmApiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: config.llmModel,
+        messages,
+        temperature,
+      }),
+      signal: controller.signal,
+    });
+    if (!res.ok) {
+      throw httpError(502, `LLM request failed with status ${res.status}`);
+    }
+    return res.json();
+  } catch (e) {
+    if (e instanceof Error && e.name === "AbortError") {
+      throw httpError(504, "LLM request timed out");
+    }
+    throw e;
+  } finally {
+    clearTimeout(timeoutId);
   }
-  return res.json();
 }
 
 function parseJsonContent(data: unknown): Record<string, unknown> {

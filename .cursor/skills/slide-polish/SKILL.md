@@ -37,6 +37,6 @@ Pipeline: **raw → expand → confirm outline → slides from expanded → Reve
 
 - Skills: `.cursor/skills/expand-narrative`, `deck-aesthetic`, `slide-polish`
 - APIs: `POST /api/expand`, `PATCH /api/projects/{id}/expanded`, `POST /api/projects/{id}/generate`
-- Export client: `frontend/src/lib/revealExport.ts`
-- Store: `server/src/services/deckStore.ts`
-- LLM: `server/src/services/llm.ts` (`MAX_SLIDES`, `MAX_OUTLINE_CHAPTERS`)
+- Export client: `apps/web/src/lib/revealExport.ts`
+- Store: `apps/api/src/services/deckStore.ts`
+- LLM: `apps/api/src/services/llm.ts` (`MAX_SLIDES`, `MAX_OUTLINE_CHAPTERS`)
