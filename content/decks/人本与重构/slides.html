@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>人本与重构</title>
+<style>
+:root {
+  --ink: #14161c;
+  --muted: #4a505c;
+  --paper: #f7f4ee;
+  --accent: #c45c26;
+  --accent-soft: #e8d5c4;
+  --line: #d9d2c5;
+  --white: #fff;
+  --sans: "Helvetica Neue", Helvetica, Arial, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+}
+* { box-sizing: border-box; }
+html, body {
+  margin: 0; height: 100%;
+  background: #0f1115; color: var(--ink); font-family: var(--sans);
+}
+.deck { height: 100%; position: relative; overflow: hidden; }
+.slide {
+  display: none; position: absolute; inset: 0; margin: auto;
+  width: min(100vw, calc(100vh * 16 / 9));
+  height: min(100vh, calc(100vw * 9 / 16));
+  background: var(--paper);
+  padding: 4.2% 5.2% 5.5%;
+  overflow: hidden;
+}
+.slide.active { display: flex; flex-direction: column; }
+
+/* —— Cover / background-board word cloud —— */
+.slide.cover {
+  padding: 0;
+  background: var(--paper);
+}
+.cover-rail {
+  position: absolute; left: 0; top: 0; bottom: 0; width: 14px; background: var(--ink); z-index: 3;
+}
+.cover-bg {
+  position: absolute; inset: 0; z-index: 0;
+  background:
+    url("./cover-bg.png") center / cover no-repeat;
+  opacity: 0.55;
+  filter: saturate(0.9) contrast(0.95);
+}
+.cover-wash {
+  position: absolute; inset: 0; z-index: 1;
+  background:
+    radial-gradient(ellipse 75% 65% at 22% 82%, rgba(247,244,238,0.97) 0%, rgba(247,244,238,0.55) 42%, transparent 68%),
+    linear-gradient(to top, rgba(247,244,238,0.92) 0%, rgba(247,244,238,0.35) 36%, transparent 55%);
+  pointer-events: none;
+}
+.cover-hero {
+  position: absolute; left: 0; right: 0; bottom: 0; z-index: 2;
+  padding: 6.5% 6% 6.5% 5.5%;
+}
+.cover-brand {
+  font-size: 0.72rem; letter-spacing: 0.22em; text-transform: uppercase;
+  color: var(--accent); font-weight: 650; margin: 0 0 0.5rem;
+}
+.cover-title {
+  margin: 0; font-size: clamp(2.4rem, 5vw, 3.3rem); font-weight: 700;
+  line-height: 1.1; letter-spacing: -0.02em;
+}
+.cover-sub {
+  margin: 0.75rem 0 0; font-size: clamp(0.95rem, 1.7vw, 1.15rem);
+  color: var(--muted); max-width: 36rem; line-height: 1.45;
+}
+
+/* —— Content slides —— */
+.accent-bar {
+  position: absolute; left: 0; top: 0; right: 0; height: 6px; background: var(--accent);
+}
+.rule { height: 1px; background: var(--line); margin: 0 0 1.2rem; }
+.h {
+  margin: 1rem 0 0.75rem; font-size: clamp(1.45rem, 3vw, 1.85rem);
+  font-weight: 700; letter-spacing: -0.015em;
+}
+.kicker {
+  display: inline-block; margin-top: 0.35rem;
+  font-size: 0.72rem; letter-spacing: 0.18em; color: var(--accent); font-weight: 650;
+}
+.bullets {
+  margin: 0; padding-left: 1.15rem;
+  font-size: clamp(1.02rem, 1.85vw, 1.18rem); line-height: 1.48;
+}
+.bullets li { margin: 0 0 0.62rem; }
+.bullets strong { font-weight: 650; color: var(--ink); }
+.cols {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; flex: 1;
+}
+.card {
+  background: var(--white); border: 1px solid var(--line); border-radius: 10px;
+  padding: 1.1rem 1.15rem 1.2rem;
+}
+.card h3 {
+  margin: 0 0 0.75rem; font-size: 0.88rem; color: var(--accent);
+  letter-spacing: 0.04em; font-weight: 650;
+}
+.card ul {
+  margin: 0; padding-left: 1.05rem;
+  font-size: clamp(0.95rem, 1.7vw, 1.08rem); line-height: 1.42;
+}
+.card li { margin: 0 0 0.5rem; }
+.stat-row {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 1.1rem; margin-bottom: 1.1rem;
+}
+.stat {
+  background: var(--white); border: 1px solid var(--line); border-radius: 10px;
+  padding: 1rem 1.15rem;
+}
+.stat .n {
+  font-size: clamp(1.6rem, 3.2vw, 2.1rem); font-weight: 750;
+  letter-spacing: -0.03em; color: var(--accent); line-height: 1.1;
+}
+.stat .l { margin-top: 0.35rem; font-size: 0.92rem; color: var(--muted); }
+
+.bar {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 5;
+  display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+  padding: 0.55rem 1rem; background: rgba(15,17,21,0.82); color: #e8e6e1;
+  font-size: 0.85rem; backdrop-filter: blur(6px);
+}
+.bar button {
+  font: inherit; color: inherit; background: transparent; border: 1px solid #3a3f4a;
+  border-radius: 6px; padding: 0.3rem 0.7rem; cursor: pointer;
+}
+.bar button:hover { background: #232733; }
+.bar .meta { opacity: 0.85; }
+@media print {
+  html, body, .deck { height: auto; background: #fff; }
+  .bar { display: none; }
+  .slide {
+    display: flex !important; position: relative; page-break-after: always;
+    width: 100%; height: auto; min-height: 100vh; inset: auto;
+  }
+  .cover-bg { opacity: 0.35; filter: none; }
+}
+</style>
+</head>
+<body>
+<div class="deck" id="deck">
+
+<!-- 0 Cover -->
+<section class="slide cover active" data-i="0" aria-label="Slide 1">
+  <div class="cover-rail"></div>
+  <div class="cover-bg" role="img" aria-label="关键词背景"></div>
+  <div class="cover-wash" aria-hidden="true"></div>
+  <div class="cover-hero">
+    <p class="cover-brand">FIVE LEVERS</p>
+    <h1 class="cover-title">人本与重构</h1>
+    <p class="cover-sub">人才杠杆 · 数据范式 · 软硬协同 · AI + China · 营销被理解</p>
+  </div>
+</section>
+
+<!-- 1 人本 -->
+<section class="slide" data-i="1" aria-label="Slide 2">
+  <div class="accent-bar"></div>
+  <p class="kicker">01 · PEOPLE</p>
+  <h2 class="h">人本：人才杠杆与可适应的人</h2>
+  <div class="rule"></div>
+  <div class="cols">
+    <div class="card">
+      <h3>拥抱与杠杆</h3>
+      <ul>
+        <li>技能提升 + 会用工具 → <strong>人才杠杆</strong></li>
+        <li>敢于相信 AI；安全跟上，才敢真正用</li>
+        <li>被 AI 替代的人，往往是<strong>第一批拥抱 AI</strong>的人</li>
+        <li><strong>无知者无畏</strong>是褒义：愿意冒险进入新问题</li>
+        <li>每人一个<strong>增强分身</strong>，拓展能力边界</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>组织与外企优势</h3>
+      <ul>
+        <li>旧经验解不了新问题 → 本科教育与新人才培养要跟上</li>
+        <li>允许<strong>探索</strong>，比锁死任务更能用好工具</li>
+        <li>战略要适应变化，但不能频繁改——培养<strong>可适应变化的人才</strong></li>
+        <li>外企优势：厚积薄发 · 生活 · 人本 · 品质 · 沉淀</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- 2 数据范式 -->
+<section class="slide" data-i="2" aria-label="Slide 3">
+  <div class="accent-bar"></div>
+  <p class="kicker">02 · DATA</p>
+  <h2 class="h">数据范式变化：求其次，旧数据也有新发现</h2>
+  <div class="rule"></div>
+  <ul class="bullets">
+    <li>数据范式的变化，可以与营销里的「<strong>求其次</strong>」结合起来——先把可用的用起来</li>
+    <li>过去被视为<strong>低质量</strong>的数据，现在已经可以很好地利用</li>
+    <li>这意味着可以<strong>更广阔地审视数据本身</strong>，而不是只等「完美样本」</li>
+    <li>无论是<strong>老旧数据</strong>还是<strong>新数据</strong>——旧数据也可能长出<strong>新发现</strong></li>
+    <li>范式翻转后：数据的价值边界被推开，营销与洞察的输入面随之变宽</li>
+  </ul>
+</section>
+
+<!-- 3 软硬件协同 -->
+<section class="slide" data-i="3" aria-label="Slide 4">
+  <div class="accent-bar"></div>
+  <p class="kicker">03 · SYSTEMS</p>
+  <h2 class="h">软硬件协同：coding 为基石，Bottom Up</h2>
+  <div class="rule"></div>
+  <div class="cols">
+    <div class="card">
+      <h3>可重构的世界</h3>
+      <ul>
+        <li>重构所有系统：<strong>coding 是一切的基石</strong></li>
+        <li>coding 能做的事，原则上都可以被重构</li>
+        <li>包括 NVIDIA 在内——许多门槛与护城河<strong>实际上很薄弱</strong></li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>生态路径</h3>
+      <ul>
+        <li><strong>Bottom Up</strong>：从生态与应用出发，让产业提问题、协作</li>
+        <li>协作到位，远景才可落地</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- 4 AI + China -->
+<section class="slide" data-i="4" aria-label="Slide 5">
+  <div class="accent-bar"></div>
+  <p class="kicker">04 · AI + CHINA</p>
+  <h2 class="h">AI + China：双重效率与共同体</h2>
+  <div class="rule"></div>
+  <div class="stat-row">
+    <div class="stat">
+      <div class="n">−9,000 万</div>
+      <div class="l">2030 预计减少的职业规模</div>
+    </div>
+    <div class="stat">
+      <div class="n">+1.7 亿</div>
+      <div class="l">2030 预计新增的职业规模</div>
+    </div>
+  </div>
+  <ul class="bullets">
+    <li>结构在换，不是简单缩表——职业消长同时发生</li>
+    <li><strong>AI + China</strong> 带来<strong>双重效率提升</strong>：技术红利叠加上本地规模与执行密度</li>
+    <li>物理层面的<strong>端到端 AI 共同体</strong>建设，有政策扶持</li>
+    <li>目标取向：<strong>公平惠及所有人</strong></li>
+  </ul>
+</section>
+
+<!-- 5 AI 重构营销 -->
+<section class="slide" data-i="5" aria-label="Slide 6">
+  <div class="accent-bar"></div>
+  <p class="kicker">05 · MARKETING</p>
+  <h2 class="h">AI 重构营销：被理解，以及美和调性</h2>
+  <div class="rule"></div>
+  <div class="cols">
+    <div class="card">
+      <h3>入口与认知</h3>
+      <ul>
+        <li>大量<strong>品牌资产没有被 AI 认可</strong></li>
+        <li>面向 AI 营销：价值与认知需<strong>被 AI / 手机理解</strong></li>
+        <li>入口：搜索引擎 → 传统 App → <strong>AI 工具 App 与手机本身</strong></li>
+        <li><strong>头部视频 / KOI ≠ 头部推荐</strong></li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>调研与差异化</h3>
+      <ul>
+        <li>调研数据的<strong>参考意义下降</strong></li>
+        <li>AI 可<strong>高并发全网调研</strong></li>
+        <li>行业仍<strong>缺少美和调性</strong></li>
+        <li>审美与调性——人守住的差异化</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+</div>
+
+<div class="bar">
+  <div>
+    <button type="button" id="prev" aria-label="Previous">←</button>
+    <button type="button" id="next" aria-label="Next">→</button>
+  </div>
+  <div class="meta" id="meta">1 / 6</div>
+</div>
+
+<script>
+(function () {
+  const slides = Array.from(document.querySelectorAll(".slide"));
+  let i = 0;
+  function show(n) {
+    i = (n + slides.length) % slides.length;
+    slides.forEach((s, idx) => s.classList.toggle("active", idx === i));
+    document.getElementById("meta").textContent = (i + 1) + " / " + slides.length;
+  }
+  document.getElementById("prev").onclick = () => show(i - 1);
+  document.getElementById("next").onclick = () => show(i + 1);
+  window.addEventListener("keydown", (e) => {
+    if (e.key === "ArrowRight" || e.key === " " || e.key === "PageDown") { e.preventDefault(); show(i + 1); }
+    if (e.key === "ArrowLeft" || e.key === "PageUp") { e.preventDefault(); show(i - 1); }
+  });
+  show(0);
+})();
+</script>
+</body>
+</html>

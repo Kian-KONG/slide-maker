@@ -1,0 +1,32 @@
+{
+  "title": "人本与重构",
+  "project_id": null,
+  "slug": "人本与重构",
+  "slide_count": 6,
+  "has_expanded": true,
+  "pipeline": "expand-v1-manual",
+  "updated_at": "2026-07-21T05:54:00.000Z",
+  "outline": [
+    {
+      "title": "人本：人才杠杆与可适应的人",
+      "intent": "建立人才杠杆、拥抱 AI、可适应人才与增强分身的主张。"
+    },
+    {
+      "title": "数据范式：求其次与旧数据新发现",
+      "intent": "说明低质量数据可用、审视面变宽，旧数据也能长出新发现。"
+    },
+    {
+      "title": "软硬件协同：coding 与 Bottom Up",
+      "intent": "强调 coding 为基石、护城河变薄，以及 Bottom Up 的产业协作路径。"
+    },
+    {
+      "title": "AI + China：双重效率与共同体",
+      "intent": "用 2030 职业消长数字与双重效率、政策共同体收束中国优势。"
+    },
+    {
+      "title": "AI 重构营销：被理解与美和调性",
+      "intent": "入口迁移、品牌需被 AI/手机理解，调研贬值，美和调性仍是人的空间。"
+    }
+  ],
+  "renderer": "custom-html"
+}
